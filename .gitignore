@@ -1,0 +1,7 @@
+.build
+.serverless
+package-lock.json
+node_modules
+.esbuild
+.vscode
+.env

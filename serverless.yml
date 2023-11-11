@@ -1,0 +1,78 @@
+service: simple-todo-server
+useDotenv: true
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+
+package:
+  individually: true
+  patterns:
+    - 'node_modules/.prisma/client/schema.prisma'
+    - '!node_modules/.prisma/client/libquery_engine-*'
+    - 'node_modules/.prisma/client/libquery_engine-rhel-*'
+    - '!node_modules/prisma/libquery_engine-*'
+    - '!node_modules/@prisma/engines/**'
+
+custom:
+  esbuild:
+    minify: true
+    watch:
+      pattern: ['./index.ts', 'src/**/*.ts', 'prisma/**/*'] # default .
+      ignore: ['.serverless/**/*', '.build'] # default ['.build', 'dist', 'node_modules']
+    packagerOptions:
+      scripts: npm run prisma-generate
+
+provider:
+  name: aws
+  stage: prod
+  runtime: 'nodejs18.x'
+  region: 'ap-northeast-2'
+  stackName: ${self:service}-stack
+  deploymentBucket:
+    name: ${self:service}-bucket
+  apiGateway:
+    minimumCompressionSize: 1024
+    shouldStartNameWithService: true
+  environment:
+    STAGE: ${self:provider.stage}
+    DATABASE_URL: ${env:DATABASE_URL}
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 's3:getObject'
+          Resource: 'arn:aws:s3:::${self:service}-bucket'
+        - Effect: 'Allow'
+          Action:
+            - 'sts:AssumeRole'
+          Resource: 'arn:aws:sts:::assumed-role/*'
+  httpApi:
+    cors:
+      allowedOrigins:
+        - '*'
+      allowedMethods:
+        - GET
+        - OPTIONS
+        - POST
+        - PUT
+        - DELETE
+      allowedHeaders:
+        - Content-Type
+        - X-Amz-Date
+        - Authorization
+        - X-Api-Key
+        - X-Amz-Security-Token
+        - X-Amz-User-Agent
+        - X-Transaction-Key
+        - Access-Control-Allow-Origin
+      # allowCredentials: true
+
+functions:
+  api:
+    handler: src/index.handler
+    events:
+      - httpApi: '*'
