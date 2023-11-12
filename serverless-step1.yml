@@ -1,0 +1,32 @@
+service: simple-todo-server-practice
+useDotenv: true
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+
+package:
+  individually: true
+
+custom:
+  esbuild:
+    minify: true
+    watch:
+      pattern: ['./index.ts', 'src/**/*.ts', 'prisma/**/*'] # default .
+      ignore: ['.serverless/**/*', '.build'] # default ['.build', 'dist', 'node_modules']
+
+provider:
+  name: aws
+  stage: prod
+  runtime: 'nodejs18.x'
+  region: 'ap-northeast-2'
+
+functions:
+  api:
+    handler: index.handler
+    events:
+      - http:
+          path: hello
+          method: get
